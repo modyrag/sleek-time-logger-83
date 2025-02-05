@@ -7,11 +7,51 @@ import Navigation from "@/components/Navigation";
 import type { AttendanceRecord } from "@/components/AttendanceTable";
 import { useToast } from "@/components/ui/use-toast";
 
+const STORAGE_KEY = "attendance_data";
+const CHECKIN_KEY = "current_checkin";
+const IS_CHECKED_IN_KEY = "is_checked_in";
+
 const Index = () => {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [currentCheckIn, setCurrentCheckIn] = useState<Date | null>(null);
+  const [records, setRecords] = useState<AttendanceRecord[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((record: any) => ({
+        ...record,
+        date: new Date(record.date),
+        checkIn: new Date(record.checkIn),
+        checkOut: record.checkOut ? new Date(record.checkOut) : undefined,
+      }));
+    }
+    return [];
+  });
+
+  const [isCheckedIn, setIsCheckedIn] = useState(() => {
+    return localStorage.getItem(IS_CHECKED_IN_KEY) === "true";
+  });
+
+  const [currentCheckIn, setCurrentCheckIn] = useState<Date | null>(() => {
+    const saved = localStorage.getItem(CHECKIN_KEY);
+    return saved ? new Date(saved) : null;
+  });
+
   const { toast } = useToast();
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }, [records]);
+
+  useEffect(() => {
+    localStorage.setItem(IS_CHECKED_IN_KEY, isCheckedIn.toString());
+  }, [isCheckedIn]);
+
+  useEffect(() => {
+    if (currentCheckIn) {
+      localStorage.setItem(CHECKIN_KEY, currentCheckIn.toISOString());
+    } else {
+      localStorage.removeItem(CHECKIN_KEY);
+    }
+  }, [currentCheckIn]);
 
   const handleCheckIn = () => {
     const now = new Date();
