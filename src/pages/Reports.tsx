@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addWeeks, subWeeks, isBefore, startOfToday } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, isSameDay, startOfToday } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -113,7 +113,7 @@ const Reports = () => {
               <tbody>
                 {weekEarnings.map((day) => {
                   const dayDate = new Date(day.date);
-                  const isPastDay = isBefore(dayDate, today);
+                  const isToday = isSameDay(dayDate, today);
 
                   return (
                     <motion.tr
@@ -136,7 +136,7 @@ const Reports = () => {
                           className="w-32"
                           min="0"
                           step="0.01"
-                          disabled={isPastDay}
+                          disabled={!isToday}
                         />
                       </td>
                     </motion.tr>
