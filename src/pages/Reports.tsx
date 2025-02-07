@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks, isBefore, startOfToday } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -70,6 +70,8 @@ const Reports = () => {
     format(addWeeks(currentWeekStart, 1), 'MMM dd, yyyy')
   }`;
 
+  const today = startOfToday();
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <motion.div
@@ -109,31 +111,37 @@ const Reports = () => {
                 </tr>
               </thead>
               <tbody>
-                {weekEarnings.map((day) => (
-                  <motion.tr
-                    key={day.date}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border-t border-border"
-                  >
-                    <td className="p-4">
-                      {format(new Date(day.date), 'EEEE')}
-                    </td>
-                    <td className="p-4">
-                      {format(new Date(day.date), 'MMM dd, yyyy')}
-                    </td>
-                    <td className="p-4">
-                      <Input
-                        type="number"
-                        value={day.amount}
-                        onChange={(e) => handleAmountChange(day.date, e.target.value)}
-                        className="w-32"
-                        min="0"
-                        step="0.01"
-                      />
-                    </td>
-                  </motion.tr>
-                ))}
+                {weekEarnings.map((day) => {
+                  const dayDate = new Date(day.date);
+                  const isPastDay = isBefore(dayDate, today);
+
+                  return (
+                    <motion.tr
+                      key={day.date}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="border-t border-border"
+                    >
+                      <td className="p-4">
+                        {format(new Date(day.date), 'EEEE')}
+                      </td>
+                      <td className="p-4">
+                        {format(new Date(day.date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="p-4">
+                        <Input
+                          type="number"
+                          value={day.amount}
+                          onChange={(e) => handleAmountChange(day.date, e.target.value)}
+                          className="w-32"
+                          min="0"
+                          step="0.01"
+                          disabled={isPastDay}
+                        />
+                      </td>
+                    </motion.tr>
+                  );
+                })}
                 <tr className="border-t border-border bg-muted">
                   <td colSpan={2} className="p-4 font-bold">
                     Weekly Total
