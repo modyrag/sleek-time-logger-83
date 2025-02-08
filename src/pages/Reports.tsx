@@ -1,13 +1,11 @@
 
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
-import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addWeeks, subWeeks, isSameDay, startOfToday } from "date-fns";
+import { format, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar, Sun, Moon, LineChart, BarChart, PieChart } from "lucide-react";
-import { useTheme } from "next-themes";
+import { ChevronLeft, ChevronRight, Calendar, LineChart, BarChart } from "lucide-react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -16,30 +14,49 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart as RechartsBarChart,
-  Bar
 } from "recharts";
 
-interface DayEarnings {
-  date: string;
-  amount: number;
-}
+const STORAGE_KEY = "attendance_data";
 
 const Reports = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     return startOfWeek(new Date(), { weekStartsOn: 1 });
   });
 
-  const [allEarnings, setAllEarnings] = useState<Record<string, DayEarnings[]>>(() => {
-    const stored = localStorage.getItem('allEarnings');
-    return stored ? JSON.parse(stored) : {};
+  const [records, setRecords] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((record: any) => ({
+        ...record,
+        date: new Date(record.date),
+        checkIn: new Date(record.checkIn),
+        checkOut: record.checkOut ? new Date(record.checkOut) : undefined,
+      }));
+    }
+    return [];
   });
 
-  const { theme, setTheme } = useTheme();
-  const currentWeekKey = format(currentWeekStart, 'yyyy-MM-dd');
-  const weekEarnings = allEarnings[currentWeekKey] || [];
-  const totalEarnings = weekEarnings.reduce((sum, day) => sum + day.amount, 0);
+  // Update records when localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setRecords(parsed.map((record: any) => ({
+          ...record,
+          date: new Date(record.date),
+          checkIn: new Date(record.checkIn),
+          checkOut: record.checkOut ? new Date(record.checkOut) : undefined,
+        })));
+      }
+    };
 
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const currentWeekKey = format(currentWeekStart, 'yyyy-MM-dd');
   const weekRange = `${format(currentWeekStart, 'MMM dd')} - ${
     format(addWeeks(currentWeekStart, 1), 'MMM dd, yyyy')
   }`;
@@ -50,10 +67,13 @@ const Reports = () => {
     );
   };
 
-  const chartData = weekEarnings.map(day => ({
-    name: format(new Date(day.date), 'EEE'),
-    amount: day.amount
+  const weekEarnings = records.map(record => ({
+    name: format(record.date, 'EEE'),
+    amount: record.earnings || 0,
+    date: format(record.date, 'MMM dd, yyyy'),
   }));
+
+  const totalEarnings = weekEarnings.reduce((sum, day) => sum + day.amount, 0);
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
@@ -66,16 +86,6 @@ const Reports = () => {
           <div className="space-y-1">
             <h1 className="text-3xl font-bold">Earnings Analysis</h1>
             <p className="text-muted-foreground">Weekly earnings overview and trends</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="rounded-full"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
           </div>
         </div>
 
@@ -124,7 +134,7 @@ const Reports = () => {
 
               <div className="h-[300px] mt-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsLineChart data={chartData}>
+                  <RechartsLineChart data={weekEarnings}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
@@ -157,10 +167,10 @@ const Reports = () => {
                         className="bg-card"
                       >
                         <td className="px-6 py-4 text-sm">
-                          {format(new Date(day.date), 'EEEE')}
+                          {day.name}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          {format(new Date(day.date), 'MMM dd, yyyy')}
+                          {day.date}
                         </td>
                         <td className="px-6 py-4 font-medium">
                           ${day.amount.toFixed(2)}
