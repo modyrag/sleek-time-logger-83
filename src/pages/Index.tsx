@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AttendanceButton from "@/components/AttendanceButton";
@@ -6,6 +7,7 @@ import DashboardStats from "@/components/DashboardStats";
 import Navigation from "@/components/Navigation";
 import type { AttendanceRecord } from "@/components/AttendanceTable";
 import { useToast } from "@/components/ui/use-toast";
+import { isSameDay } from "date-fns";
 
 const STORAGE_KEY = "attendance_data";
 const CHECKIN_KEY = "current_checkin";
@@ -55,6 +57,18 @@ const Index = () => {
 
   const handleCheckIn = () => {
     const now = new Date();
+    
+    // Check if there's already a check-in for today
+    const todayRecord = records.find(record => isSameDay(record.date, now));
+    if (todayRecord) {
+      toast({
+        title: "Already Checked In",
+        description: "You've already recorded attendance for today",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCurrentCheckIn(now);
     setIsCheckedIn(true);
     toast({
