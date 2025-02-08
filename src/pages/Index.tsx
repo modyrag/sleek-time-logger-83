@@ -5,6 +5,8 @@ import AttendanceButton from "@/components/AttendanceButton";
 import AttendanceTable from "@/components/AttendanceTable";
 import DashboardStats from "@/components/DashboardStats";
 import Navigation from "@/components/Navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import type { AttendanceRecord } from "@/components/AttendanceTable";
 import { useToast } from "@/components/ui/use-toast";
 import { isSameDay } from "date-fns";
@@ -23,6 +25,7 @@ const Index = () => {
         date: new Date(record.date),
         checkIn: new Date(record.checkIn),
         checkOut: record.checkOut ? new Date(record.checkOut) : undefined,
+        earnings: record.earnings || 0,
       }));
     }
     return [];
@@ -36,6 +39,8 @@ const Index = () => {
     const saved = localStorage.getItem(CHECKIN_KEY);
     return saved ? new Date(saved) : null;
   });
+
+  const [todayEarnings, setTodayEarnings] = useState<number>(0);
 
   const { toast } = useToast();
 
@@ -58,7 +63,6 @@ const Index = () => {
   const handleCheckIn = () => {
     const now = new Date();
     
-    // Check if there's already a check-in for today
     const todayRecord = records.find(record => isSameDay(record.date, now));
     if (todayRecord) {
       toast({
@@ -86,11 +90,13 @@ const Index = () => {
       checkIn: currentCheckIn,
       checkOut: now,
       totalHours: (now.getTime() - currentCheckIn.getTime()) / (1000 * 60 * 60),
+      earnings: todayEarnings,
     };
 
     setRecords([newRecord, ...records]);
     setIsCheckedIn(false);
     setCurrentCheckIn(null);
+    setTodayEarnings(0);
     
     toast({
       title: "Checked Out",
@@ -103,7 +109,7 @@ const Index = () => {
   const averageHours = daysPresent ? totalHours / daysPresent : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-20">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -118,7 +124,7 @@ const Index = () => {
             Attendance Tracker
           </motion.h1>
           <p className="text-muted-foreground">
-            Track your work hours efficiently
+            Track your work hours and earnings efficiently
           </p>
         </div>
 
@@ -135,6 +141,26 @@ const Index = () => {
               disabled={!isCheckedIn}
             />
           </div>
+
+          {isCheckedIn && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 rounded-lg border bg-card"
+            >
+              <h2 className="text-lg font-semibold mb-4">Today's Earnings</h2>
+              <div className="flex gap-4 items-center">
+                <Input
+                  type="number"
+                  value={todayEarnings}
+                  onChange={(e) => setTodayEarnings(Number(e.target.value))}
+                  placeholder="Enter amount"
+                  className="max-w-[200px]"
+                />
+                <span className="text-muted-foreground">$</span>
+              </div>
+            </motion.div>
+          )}
 
           <DashboardStats
             totalHours={totalHours}
