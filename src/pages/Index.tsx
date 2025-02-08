@@ -152,8 +152,11 @@ const Index = () => {
               <div className="flex gap-4 items-center">
                 <Input
                   type="number"
-                  value={todayEarnings}
-                  onChange={(e) => setTodayEarnings(Number(e.target.value))}
+                  value={todayEarnings === 0 ? "" : todayEarnings}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setTodayEarnings(value);
+                  }}
                   placeholder="Enter amount"
                   className="max-w-[200px]"
                 />
